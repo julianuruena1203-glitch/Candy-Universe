@@ -1,7 +1,9 @@
-import React from 'react';
-import { ShoppingBag, Package, BarChart3, Calculator, Settings, LogOut, ShieldCheck, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShoppingBag, Package, BarChart3, Calculator, Settings, LogOut, ShieldCheck, User as UserIcon, Cloud, CheckCircle2 } from 'lucide-react';
 import { CandyLogo } from './CandyLogo';
 import { UserRole } from '../types';
+import { User } from 'firebase/auth';
+import { loginWithGoogle, logoutUser } from '../firebase';
 
 export type ActiveTab = 'pos' | 'products' | 'reports' | 'cuadre';
 
@@ -12,6 +14,7 @@ interface NavbarProps {
   productsCount: number;
   storeName: string;
   userRole: UserRole;
+  firebaseUser: User | null;
   onOpenSettings: () => void;
   onLogout: () => void;
 }
@@ -22,15 +25,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   cartCount,
   productsCount,
   userRole,
+  firebaseUser,
   onOpenSettings,
   onLogout,
 }) => {
   const isAdmin = userRole === 'admin';
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnect = async () => {
+    try {
+      setIsConnecting(true);
+      await loginWithGoogle();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-purple-100/80 px-3 sm:px-6 py-2.5 transition-all no-print shadow-xs shadow-purple-900/5">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        {/* Brand: Candy Universe with authentic candy colors */}
+        {/* Brand: Candy Universe */}
         <CandyLogo size="sm" showText={true} />
 
         {/* Navigation Tabs (Admin sees all; Seller sees only POS) */}
@@ -102,8 +118,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         )}
 
-        {/* User Role Badge & Actions */}
+        {/* User Role Badge, Cloud Status & Actions */}
         <div className="flex items-center gap-2">
+          {/* Cloud Sync Status Pill */}
+          {firebaseUser ? (
+            <div
+              title={`Sincronizado en tiempo real con Firebase (${firebaseUser.email})`}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="font-medium text-[11px]">En vivo</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleConnect}
+              disabled={isConnecting}
+              title="Conectar con Google para sincronizar en tiempo real"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs transition-colors"
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-medium hidden md:inline">
+                {isConnecting ? 'Conectando...' : 'Conectar Nube'}
+              </span>
+            </button>
+          )}
+
           {/* Active Profile Pill */}
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50/70 border border-purple-100 text-xs">
             {isAdmin ? (
@@ -113,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             ) : (
               <>
-                <User className="w-3.5 h-3.5 text-[#0284c7]" />
+                <UserIcon className="w-3.5 h-3.5 text-[#0284c7]" />
                 <span className="font-medium text-[#0284c7]">Vendedor</span>
               </>
             )}

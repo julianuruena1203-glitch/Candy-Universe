@@ -1,0 +1,296 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Un producto o golosina disponible en el catálogo de Candy Universe.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único del producto",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Nombre del dulce o producto",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "price": {
+          "type": "number",
+          "description": "Precio de venta al público en COP"
+        },
+        "costPrice": {
+          "type": "number",
+          "description": "Precio de costo del producto en COP"
+        },
+        "countryFlag": {
+          "type": "string",
+          "description": "Código o bandera del país de origen",
+          "maxLength": 16
+        },
+        "group": {
+          "type": "string",
+          "description": "Categoría o grupo de confitería",
+          "enum": [
+            "Bebida",
+            "Chicle",
+            "Chocolate",
+            "Galleta",
+            "Gomas",
+            "Paletas",
+            "Papas",
+            "Pasta"
+          ]
+        },
+        "saleType": {
+          "type": "string",
+          "description": "Modalidad de venta (detal o mayor)",
+          "enum": ["detal", "mayor"]
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL de la imagen del producto",
+          "maxLength": 2048
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha y hora de última modificación"
+        }
+      },
+      "required": ["id", "name", "price", "group", "saleType"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Registro de una venta realizada y ticket emitido.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Código del ticket de venta (e.g. T-01001)",
+          "maxLength": 32
+        },
+        "saleNumber": {
+          "type": "number",
+          "description": "Número consecutivo de venta"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Timestamp en milisegundos de la venta"
+        },
+        "items": {
+          "type": "array",
+          "description": "Listado de ítems vendidos"
+        },
+        "total": {
+          "type": "number",
+          "description": "Valor total de la venta"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Método de pago empleado",
+          "enum": ["bancolombia", "daviplata", "nequi", "transferencia", "efectivo"]
+        },
+        "cashReceived": {
+          "type": "number",
+          "description": "Monto de efectivo recibido si aplica"
+        },
+        "change": {
+          "type": "number",
+          "description": "Cambio o devuelta entregada"
+        },
+        "note": {
+          "type": "string",
+          "description": "Observación de la venta",
+          "maxLength": 500
+        }
+      },
+      "required": ["id", "saleNumber", "timestamp", "items", "total", "paymentMethod"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Registro de un egreso o gasto operativo de la tienda.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único del gasto",
+          "maxLength": 64
+        },
+        "description": {
+          "type": "string",
+          "description": "Descripción del gasto",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "amount": {
+          "type": "number",
+          "description": "Monto pagado en COP"
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoría contable del gasto",
+          "enum": [
+            "Mercancía / Proveedores",
+            "Aseo y Empaques",
+            "Servicios Públicos",
+            "Transporte / Domicilios",
+            "Alimentación",
+            "Nómina / Turno",
+            "Mantenimiento",
+            "Otros Gastos"
+          ]
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Método de pago empleado para el gasto",
+          "enum": ["bancolombia", "daviplata", "nequi", "transferencia", "efectivo"]
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Timestamp en milisegundos del gasto"
+        },
+        "dateStr": {
+          "type": "string",
+          "description": "Fecha del gasto en formato YYYY-MM-DD",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "note": {
+          "type": "string",
+          "description": "Nota complementaria",
+          "maxLength": 500
+        }
+      },
+      "required": ["id", "description", "amount", "category", "paymentMethod", "timestamp", "dateStr"]
+    },
+    "DailyClosure": {
+      "title": "DailyClosure",
+      "description": "Registro del cuadre de caja diario de un turno o día.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador del cierre",
+          "maxLength": 64
+        },
+        "dateStr": {
+          "type": "string",
+          "description": "Fecha del cierre (YYYY-MM-DD)",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Timestamp en ms del cierre"
+        },
+        "initialCash": {
+          "type": "number",
+          "description": "Base inicial de caja"
+        },
+        "totalSales": {
+          "type": "number",
+          "description": "Total vendido"
+        },
+        "totalExpenses": {
+          "type": "number",
+          "description": "Total de gastos registrados"
+        },
+        "netTotal": {
+          "type": "number",
+          "description": "Ventas netas menos gastos"
+        },
+        "cashSales": {
+          "type": "number",
+          "description": "Total de ventas en efectivo"
+        },
+        "cashExpenses": {
+          "type": "number",
+          "description": "Total de gastos en efectivo"
+        },
+        "expectedCash": {
+          "type": "number",
+          "description": "Efectivo esperado en caja"
+        },
+        "countedCash": {
+          "type": "number",
+          "description": "Efectivo contado físicamente"
+        },
+        "difference": {
+          "type": "number",
+          "description": "Diferencia (sobrante o faltante)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Observaciones del cuadre",
+          "maxLength": 1000
+        }
+      },
+      "required": ["id", "dateStr", "timestamp", "initialCash", "totalSales", "totalExpenses", "netTotal", "cashSales", "cashExpenses", "expectedCash"]
+    },
+    "BusinessConfig": {
+      "title": "BusinessConfig",
+      "description": "Configuración global de la tienda Candy Universe.",
+      "type": "object",
+      "properties": {
+        "storeName": {
+          "type": "string",
+          "description": "Nombre de la tienda",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "storeSubtitle": {
+          "type": "string",
+          "description": "Subtítulo o lema comercial",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "description": "Teléfono de contacto",
+          "maxLength": 50
+        },
+        "address": {
+          "type": "string",
+          "description": "Dirección de la tienda",
+          "maxLength": 200
+        },
+        "receiptFooter": {
+          "type": "string",
+          "description": "Pie de página para los tickets de venta",
+          "maxLength": 300
+        },
+        "currencySymbol": {
+          "type": "string",
+          "description": "Símbolo de la moneda utilizada",
+          "maxLength": 10
+        },
+        "nextSaleNumber": {
+          "type": "number",
+          "description": "Número correlativo para el siguiente ticket"
+        }
+      },
+      "required": ["storeName", "receiptFooter", "currencySymbol", "nextSaleNumber"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Colección de productos y dulces de Candy Universe disponibles para la venta."
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Colección de tickets y ventas emitidas en el punto de venta."
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Colección de egresos y gastos registrados en la caja."
+    },
+    "/closures/{closureId}": {
+      "schema": "DailyClosure",
+      "description": "Colección de cierres y cuadres de caja diarios."
+    },
+    "/config/{configId}": {
+      "schema": "BusinessConfig",
+      "description": "Configuración de la tienda compartida entre todas las terminales."
+    }
+  }
+}

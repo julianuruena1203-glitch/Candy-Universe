@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'julianuruena1203@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Test connection doc
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 1. Products Collection
+    function isValidProduct(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+             data.price is number && data.price >= 0 &&
+             data.group is string && data.group.size() <= 50 &&
+             data.saleType is string && (data.saleType == 'detal' || data.saleType == 'mayor') &&
+             (!('costPrice' in data) || data.costPrice is number) &&
+             (!('countryFlag' in data) || (data.countryFlag is string && data.countryFlag.size() <= 32)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2048));
+    }
+
+    match /products/{productId} {
+      allow read: if isVerifiedUser() || isAdmin();
+      allow create: if (isVerifiedUser() || isAdmin()) && isValidId(productId) && isValidProduct(request.resource.data);
+      allow update: if (isVerifiedUser() || isAdmin()) && isValidId(productId) && isValidProduct(request.resource.data);
+      allow delete: if isVerifiedUser() || isAdmin();
+    }
+
+    // 2. Sales Collection
+    function isValidSale(data) {
+      return data.id is string && data.id.size() <= 32 &&
+             data.saleNumber is number && data.saleNumber > 0 &&
+             data.timestamp is number &&
+             data.total is number && data.total >= 0 &&
+             data.paymentMethod is string && data.paymentMethod.size() <= 32 &&
+             data.items is list && data.items.size() > 0 && data.items.size() <= 200 &&
+             (!('cashReceived' in data) || data.cashReceived is number) &&
+             (!('change' in data) || data.change is number) &&
+             (!('note' in data) || (data.note is string && data.note.size() <= 500));
+    }
+
+    match /sales/{saleId} {
+      allow read: if isVerifiedUser() || isAdmin();
+      allow create: if (isVerifiedUser() || isAdmin()) && isValidId(saleId) && isValidSale(request.resource.data);
+      allow update: if (isVerifiedUser() || isAdmin()) && isValidId(saleId) && isValidSale(request.resource.data);
+      allow delete: if isVerifiedUser() || isAdmin();
+    }
+
+    // 3. Expenses Collection
+    function isValidExpense(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 200 &&
+             data.amount is number && data.amount > 0 &&
+             data.category is string && data.category.size() <= 64 &&
+             data.paymentMethod is string && data.paymentMethod.size() <= 32 &&
+             data.timestamp is number &&
+             data.dateStr is string && data.dateStr.size() <= 10 &&
+             (!('note' in data) || (data.note is string && data.note.size() <= 500));
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isVerifiedUser() || isAdmin();
+      allow create: if (isVerifiedUser() || isAdmin()) && isValidId(expenseId) && isValidExpense(request.resource.data);
+      allow update: if (isVerifiedUser() || isAdmin()) && isValidId(expenseId) && isValidExpense(request.resource.data);
+      allow delete: if isVerifiedUser() || isAdmin();
+    }
+
+    // 4. Closures Collection
+    function isValidClosure(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.dateStr is string && data.dateStr.size() <= 10 &&
+             data.timestamp is number &&
+             data.initialCash is number &&
+             data.totalSales is number &&
+             data.totalExpenses is number &&
+             data.netTotal is number &&
+             data.cashSales is number &&
+             data.cashExpenses is number &&
+             data.expectedCash is number &&
+             (!('countedCash' in data) || data.countedCash is number) &&
+             (!('difference' in data) || data.difference is number) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    match /closures/{closureId} {
+      allow read: if isVerifiedUser() || isAdmin();
+      allow create: if (isVerifiedUser() || isAdmin()) && isValidId(closureId) && isValidClosure(request.resource.data);
+      allow update: if (isVerifiedUser() || isAdmin()) && isValidId(closureId) && isValidClosure(request.resource.data);
+      allow delete: if isVerifiedUser() || isAdmin();
+    }
+
+    // 5. Config Collection
+    function isValidConfig(data) {
+      return data.storeName is string && data.storeName.size() > 0 && data.storeName.size() <= 100 &&
+             data.currencySymbol is string && data.currencySymbol.size() <= 10 &&
+             data.receiptFooter is string && data.receiptFooter.size() <= 300 &&
+             data.nextSaleNumber is number &&
+             (!('storeSubtitle' in data) || (data.storeSubtitle is string && data.storeSubtitle.size() <= 150)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 200));
+    }
+
+    match /config/{configId} {
+      allow read: if isVerifiedUser() || isAdmin();
+      allow create, update: if (isVerifiedUser() || isAdmin()) && isValidId(configId) && isValidConfig(request.resource.data);
+      allow delete: if isVerifiedUser() || isAdmin();
+    }
+  }
+}

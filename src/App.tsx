@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Product, CartItem, Sale, BusinessConfig, PaymentMethod, UserRole, Expense, DailyClosure } from './types';
 import { 
   getStoredProducts, 
@@ -18,7 +18,7 @@ import {
   saveStoredClosures
 } from './utils/storage';
 import { formatTicketCode } from './utils/format';
-import { DEFAULT_PRODUCTS } from './data/defaultProducts';
+import { DEFAULT_PRODUCTS, DEFAULT_CONFIG } from './data/defaultProducts';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { PosView } from './components/PosView';
 import { ProductsView } from './components/ProductsView';
@@ -28,8 +28,31 @@ import { TicketModal } from './components/TicketModal';
 import { ProductModal } from './components/ProductModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginView } from './components/LoginView';
+import { auth, testConnection, loginWithGoogle } from './firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import {
+  subscribeToProducts,
+  saveProductToFirestore,
+  deleteProductFromFirestore,
+  subscribeToSales,
+  saveSaleToFirestore,
+  deleteSaleFromFirestore,
+  subscribeToExpenses,
+  saveExpenseToFirestore,
+  deleteExpenseFromFirestore,
+  subscribeToClosures,
+  saveClosureToFirestore,
+  subscribeToConfig,
+  saveConfigToFirestore,
+} from './services/firestoreSync';
+import { Cloud, Wifi, AlertCircle } from 'lucide-react';
 
 export default function App() {
+  // Firebase Auth State
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [syncNoticeDismissed, setSyncNoticeDismissed] = useState(false);
+
   // User Role Authentication State (null = show initial login screen)
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
 
@@ -47,26 +70,61 @@ export default function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
-  // Sync to storage on state changes
+  // Validate connection to Firestore on initial boot (Critical Constraint)
   useEffect(() => {
-    saveStoredProducts(products);
-  }, [products]);
+    testConnection();
+  }, []);
 
+  // Listen to Firebase Auth state
   useEffect(() => {
-    saveStoredSales(sales);
-  }, [sales]);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
+  // Set up real-time Firestore listeners when user is authenticated
   useEffect(() => {
-    saveStoredExpenses(expenses);
-  }, [expenses]);
+    if (!firebaseUser) {
+      setIsCloudSyncing(false);
+      return;
+    }
 
-  useEffect(() => {
-    saveStoredClosures(closures);
-  }, [closures]);
+    setIsCloudSyncing(true);
 
-  useEffect(() => {
-    saveStoredConfig(config);
-  }, [config]);
+    const unsubProducts = subscribeToProducts((cloudProducts) => {
+      setProducts(cloudProducts);
+      saveStoredProducts(cloudProducts);
+    });
+
+    const unsubSales = subscribeToSales((cloudSales) => {
+      setSales(cloudSales);
+      saveStoredSales(cloudSales);
+    });
+
+    const unsubExpenses = subscribeToExpenses((cloudExpenses) => {
+      setExpenses(cloudExpenses);
+      saveStoredExpenses(cloudExpenses);
+    });
+
+    const unsubClosures = subscribeToClosures((cloudClosures) => {
+      setClosures(cloudClosures);
+      saveStoredClosures(cloudClosures);
+    });
+
+    const unsubConfig = subscribeToConfig((cloudConfig) => {
+      setConfig(cloudConfig);
+      saveStoredConfig(cloudConfig);
+    });
+
+    return () => {
+      unsubProducts();
+      unsubSales();
+      unsubExpenses();
+      unsubClosures();
+      unsubConfig();
+    };
+  }, [firebaseUser]);
 
   // When a seller logs in, force activeTab to POS
   useEffect(() => {
@@ -110,9 +168,9 @@ export default function App() {
     setCart([]);
   }, []);
 
-  // Complete Sale & Generate Ticket
+  // Complete Sale & Generate Ticket (Syncs directly to Firestore & across all devices)
   const handleCompleteSale = useCallback(
-    (saleData: {
+    async (saleData: {
       paymentMethod: PaymentMethod;
       cashReceived?: number;
       change?: number;
@@ -120,7 +178,6 @@ export default function App() {
     }) => {
       if (cart.length === 0) return;
 
-      // Find guaranteed unique saleNumber and ticketId
       const existingIds = new Set(sales.map((s) => s.id));
       const existingNumbers = new Set(sales.map((s) => s.saleNumber));
 
@@ -158,47 +215,80 @@ export default function App() {
         note: saleData.note,
       };
 
-      // Add to sales list (most recent first)
+      // Optimistic local update
       setSales((prev) => [newSale, ...prev]);
+      saveStoredSales([newSale, ...sales]);
 
-      // Increment next ticket number in configuration
-      setConfig((prev) => ({
-        ...prev,
+      const updatedConfig = {
+        ...config,
         nextSaleNumber: saleNumber + 1,
-      }));
+      };
+      setConfig(updatedConfig);
+      saveStoredConfig(updatedConfig);
 
-      // Clear current sale cart
+      // Real-time broadcast to Firestore
+      if (firebaseUser) {
+        try {
+          await saveSaleToFirestore(newSale);
+          await saveConfigToFirestore(updatedConfig);
+        } catch (e) {
+          console.error('Error saving sale to Firestore:', e);
+        }
+      }
+
+      // Clear current sale cart & show ticket modal
       setCart([]);
-
-      // Automatically display the generated ticket modal
       setActiveTicketSale(newSale);
     },
-    [cart, config.nextSaleNumber, sales.length]
+    [cart, config, sales, firebaseUser]
   );
 
-  // Products CRUD (Admin only)
-  const handleSaveProduct = useCallback((productData: Omit<Product, 'id'> & { id?: string }) => {
-    if (productData.id) {
-      // Edit
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === productData.id ? { ...(productData as Product) } : p
-        )
-      );
-    } else {
-      // Create new
-      const newProduct: Product = {
-        ...productData,
-        id: 'p_' + Date.now() + Math.random().toString(36).substring(2, 6),
-      };
-      setProducts((prev) => [newProduct, ...prev]);
-    }
-  }, []);
+  // Products CRUD (Admin only - synced in real-time)
+  const handleSaveProduct = useCallback(
+    async (productData: Omit<Product, 'id'> & { id?: string }) => {
+      let targetProduct: Product;
+      if (productData.id) {
+        targetProduct = { ...(productData as Product) };
+        setProducts((prev) =>
+          prev.map((p) => (p.id === productData.id ? targetProduct : p))
+        );
+      } else {
+        targetProduct = {
+          ...productData,
+          id: 'p_' + Date.now() + Math.random().toString(36).substring(2, 6),
+        };
+        setProducts((prev) => [targetProduct, ...prev]);
+      }
 
-  const handleDeleteProduct = useCallback((productId: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
-  }, []);
+      saveStoredProducts(products);
+
+      // Real-time broadcast to Firestore
+      if (firebaseUser) {
+        try {
+          await saveProductToFirestore(targetProduct);
+        } catch (e) {
+          console.error('Error saving product to Firestore:', e);
+        }
+      }
+    },
+    [products, firebaseUser]
+  );
+
+  const handleDeleteProduct = useCallback(
+    async (productId: string) => {
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+      setCart((prev) => prev.filter((item) => item.product.id !== productId));
+
+      if (firebaseUser) {
+        try {
+          await deleteProductFromFirestore(productId);
+        } catch (e) {
+          console.error('Error deleting product from Firestore:', e);
+        }
+      }
+    },
+    [firebaseUser]
+  );
 
   const handleEditProductClick = useCallback((product: Product) => {
     setProductToEdit(product);
@@ -211,54 +301,150 @@ export default function App() {
   }, []);
 
   // Sales deletion (from reports)
-  const handleDeleteSale = useCallback((saleId: string) => {
-    setSales((prev) => prev.filter((s) => s.id !== saleId));
-  }, []);
+  const handleDeleteSale = useCallback(
+    async (saleId: string) => {
+      setSales((prev) => prev.filter((s) => s.id !== saleId));
+      if (firebaseUser) {
+        try {
+          await deleteSaleFromFirestore(saleId);
+        } catch (e) {
+          console.error('Error deleting sale from Firestore:', e);
+        }
+      }
+    },
+    [firebaseUser]
+  );
 
   // Expenses CRUD (Cuadre)
-  const handleAddExpense = useCallback((expenseData: Omit<Expense, 'id'>) => {
-    const newExpense: Expense = {
-      ...expenseData,
-      id: 'exp_' + Date.now() + Math.random().toString(36).substring(2, 6),
-    };
-    setExpenses((prev) => [newExpense, ...prev]);
-  }, []);
+  const handleAddExpense = useCallback(
+    async (expenseData: Omit<Expense, 'id'>) => {
+      const newExpense: Expense = {
+        ...expenseData,
+        id: 'exp_' + Date.now() + Math.random().toString(36).substring(2, 6),
+      };
+      setExpenses((prev) => [newExpense, ...prev]);
 
-  const handleDeleteExpense = useCallback((expenseId: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-  }, []);
-
-  const handleSaveClosure = useCallback((closure: DailyClosure) => {
-    setClosures((prev) => {
-      const idx = prev.findIndex((c) => c.dateStr === closure.dateStr);
-      if (idx >= 0) {
-        const copy = [...prev];
-        copy[idx] = closure;
-        return copy;
+      if (firebaseUser) {
+        try {
+          await saveExpenseToFirestore(newExpense);
+        } catch (e) {
+          console.error('Error saving expense to Firestore:', e);
+        }
       }
-      return [closure, ...prev];
-    });
-  }, []);
+    },
+    [firebaseUser]
+  );
+
+  const handleDeleteExpense = useCallback(
+    async (expenseId: string) => {
+      setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+      if (firebaseUser) {
+        try {
+          await deleteExpenseFromFirestore(expenseId);
+        } catch (e) {
+          console.error('Error deleting expense from Firestore:', e);
+        }
+      }
+    },
+    [firebaseUser]
+  );
+
+  const handleSaveClosure = useCallback(
+    async (closure: DailyClosure) => {
+      setClosures((prev) => {
+        const idx = prev.findIndex((c) => c.dateStr === closure.dateStr);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = closure;
+          return copy;
+        }
+        return [closure, ...prev];
+      });
+
+      if (firebaseUser) {
+        try {
+          await saveClosureToFirestore(closure);
+        } catch (e) {
+          console.error('Error saving closure to Firestore:', e);
+        }
+      }
+    },
+    [firebaseUser]
+  );
 
   // Settings Actions
-  const handleResetProducts = useCallback(() => {
+  const handleResetProducts = useCallback(async () => {
     setProducts(DEFAULT_PRODUCTS);
-  }, []);
+    saveStoredProducts(DEFAULT_PRODUCTS);
+    if (firebaseUser) {
+      for (const prod of DEFAULT_PRODUCTS) {
+        await saveProductToFirestore(prod);
+      }
+    }
+  }, [firebaseUser]);
 
   const handleClearSales = useCallback(() => {
     setSales([]);
+    saveStoredSales([]);
   }, []);
 
-  // If no user is logged in, show initial login screen to select role
+  const handleSaveConfig = useCallback(
+    async (newConfig: BusinessConfig) => {
+      setConfig(newConfig);
+      saveStoredConfig(newConfig);
+      if (firebaseUser) {
+        try {
+          await saveConfigToFirestore(newConfig);
+        } catch (e) {
+          console.error('Error saving config to Firestore:', e);
+        }
+      }
+    },
+    [firebaseUser]
+  );
+
+  // If no user role is selected, show initial login screen
   if (!currentUserRole) {
-    return <LoginView onSelectRole={(role) => setCurrentUserRole(role)} />;
+    return (
+      <LoginView
+        firebaseUser={firebaseUser}
+        onSelectRole={(role) => setCurrentUserRole(role)}
+      />
+    );
   }
 
   const isAdmin = currentUserRole === 'admin';
 
   return (
     <div className="min-h-screen bg-[#faf7fd] flex flex-col text-slate-900 selection:bg-cyan-200 selection:text-purple-950">
-      {/* Top Navbar with role-aware controls */}
+      {/* Real-time sync notification bar if not yet connected to Firebase */}
+      {!firebaseUser && !syncNoticeDismissed && (
+        <div className="bg-amber-500/10 border-b border-amber-200/80 px-4 py-2 text-xs text-amber-900 flex items-center justify-between no-print">
+          <div className="flex items-center gap-2 max-w-4xl mx-auto">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              Para sincronizar modificaciones en tiempo real desde cualquier celular, computadora o tablet,{' '}
+              <strong className="font-semibold">conecta la tienda con Google</strong>.
+            </span>
+            <button
+              type="button"
+              onClick={() => loginWithGoogle()}
+              className="ml-2 px-2.5 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium text-[11px] transition-colors shrink-0"
+            >
+              Conectar Google
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncNoticeDismissed(true)}
+            className="text-amber-700 hover:text-amber-900 font-bold px-2"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Top Navbar with role-aware controls and live cloud sync indicator */}
       <Navbar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -266,6 +452,7 @@ export default function App() {
         productsCount={products.length}
         storeName={config.storeName}
         userRole={currentUserRole}
+        firebaseUser={firebaseUser}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         onLogout={() => setCurrentUserRole(null)}
       />
@@ -308,7 +495,7 @@ export default function App() {
           />
         )}
 
-        {/* Cuadre View is strictly for Administrator (Daily closure, sales consolidation, expenses & net income) */}
+        {/* Cuadre View is strictly for Administrator */}
         {activeTab === 'cuadre' && isAdmin && (
           <CuadreView
             sales={sales}
@@ -323,7 +510,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Sales Ticket Modal (Auto pops up after selling, or when clicked from reports) */}
+      {/* Sales Ticket Modal */}
       <TicketModal
         sale={activeTicketSale}
         config={config}
@@ -354,7 +541,7 @@ export default function App() {
           isOpen={isSettingsModalOpen}
           config={config}
           onClose={() => setIsSettingsModalOpen(false)}
-          onSaveConfig={setConfig}
+          onSaveConfig={handleSaveConfig}
           onResetProducts={handleResetProducts}
           onClearSales={handleClearSales}
         />
