@@ -3,7 +3,20 @@ import { Product, ProductGroup } from '../types';
 import { formatCurrency } from '../utils/format';
 import { PRODUCT_GROUPS } from '../data/countries';
 import { CountryFlag } from './CountryFlag';
-import { Search, Plus, Edit2, Trash2, Package, Tag, Box, AlertTriangle, X } from 'lucide-react';
+import { 
+  Search, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Package, 
+  Tag, 
+  Box, 
+  AlertTriangle, 
+  X, 
+  ZoomIn, 
+  Eye, 
+  DollarSign 
+} from 'lucide-react';
 
 interface ProductsViewProps {
   products: Product[];
@@ -24,6 +37,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [selectedGroup, setSelectedGroup] = useState<'Todos' | ProductGroup>('Todos');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [selectedPreviewProduct, setSelectedPreviewProduct] = useState<Product | null>(null);
 
   const availableCountryCodes = useMemo(() => {
     const set = new Set<string>();
@@ -54,7 +68,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <div className="flex items-center gap-2 text-xs text-purple-600/80 mt-0.5 font-light">
             <span>{products.length} productos registrados</span>
             <span>·</span>
-            <span>Precios al Detal y Por Mayor configurados</span>
+            <span>Toca la foto o el producto para ver la imagen en grande</span>
           </div>
         </div>
 
@@ -184,19 +198,36 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   return (
                     <tr key={p.id} className="hover:bg-purple-50/30 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
-                          {p.imageUrl ? (
-                            <img
-                              src={p.imageUrl}
-                              alt={p.name}
-                              className="w-10 h-10 rounded-xl object-cover border border-purple-100 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-purple-100/60 border border-purple-200/60 flex items-center justify-center shrink-0 text-purple-400">
-                              <Package className="w-5 h-5 stroke-1" />
-                            </div>
-                          )}
-                          <div className="font-normal text-slate-900 text-sm">
+                        <div className="flex items-center gap-3">
+                          {/* Photo Thumbnail with Zoom Trigger */}
+                          <div
+                            onClick={() => setSelectedPreviewProduct(p)}
+                            title="Toca para ampliar la foto del producto"
+                            className="relative group/thumb w-11 h-11 rounded-2xl overflow-hidden border border-purple-100 hover:border-[#7c3aed] bg-purple-50 shrink-0 cursor-pointer transition-all hover:scale-105 hover:shadow-md"
+                          >
+                            {p.imageUrl ? (
+                              <>
+                                <img
+                                  src={p.imageUrl}
+                                  alt={p.name}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-purple-950/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
+                                  <ZoomIn className="w-4 h-4 text-white drop-shadow-xs" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-purple-300 group-hover/thumb:text-[#7c3aed]">
+                                <Package className="w-5 h-5 stroke-1" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Product Name clickable to preview */}
+                          <div
+                            onClick={() => setSelectedPreviewProduct(p)}
+                            className="font-normal text-slate-900 text-sm hover:text-[#6d28d9] cursor-pointer transition-colors"
+                          >
                             {p.name}
                           </div>
                         </div>
@@ -267,6 +298,122 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         )}
       </div>
 
+      {/* Enlarged Photo / Lightbox Modal */}
+      {selectedPreviewProduct && (
+        <div
+          onClick={() => setSelectedPreviewProduct(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-purple-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl border border-purple-200 flex flex-col max-h-[92vh]"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-purple-100 bg-purple-50/70">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <CountryFlag countryCode={selectedPreviewProduct.countryFlag || 'CO'} size="md" />
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate">
+                    {selectedPreviewProduct.name}
+                  </h3>
+                  <span className="text-[11px] text-purple-600/80 font-light">
+                    {selectedPreviewProduct.group}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedPreviewProduct(null)}
+                aria-label="Cerrar vista previa"
+                className="p-1.5 text-slate-400 hover:text-purple-900 hover:bg-purple-100 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Large Image Canvas */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col items-center justify-center bg-gradient-to-b from-[#faf7fd] to-white">
+              {selectedPreviewProduct.imageUrl ? (
+                <div className="relative w-full max-h-[52vh] flex items-center justify-center rounded-2xl overflow-hidden bg-purple-50/50 border border-purple-100/80 shadow-sm p-2">
+                  <img
+                    src={selectedPreviewProduct.imageUrl}
+                    alt={selectedPreviewProduct.name}
+                    className="max-h-[48vh] w-auto max-w-full object-contain rounded-xl drop-shadow-md transition-transform duration-300 hover:scale-[1.02]"
+                  />
+                </div>
+              ) : (
+                <div className="w-full py-16 rounded-2xl bg-purple-50/40 border border-dashed border-purple-200 flex flex-col items-center justify-center text-center p-6 space-y-2">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-100 text-purple-400 flex items-center justify-center mb-1">
+                    <Package className="w-9 h-9 stroke-1" />
+                  </div>
+                  <h4 className="font-medium text-purple-900 text-sm">
+                    Sin foto adjunta
+                  </h4>
+                  <p className="text-xs text-slate-500 font-light max-w-xs">
+                    Puedes agregar una foto de hasta 4MB para este producto editándolo desde el catálogo.
+                  </p>
+                </div>
+              )}
+
+              {/* Price and Details Badges */}
+              <div className="w-full grid grid-cols-2 gap-2.5 mt-4">
+                <div className="p-3 rounded-2xl bg-cyan-50/80 border border-cyan-100 flex flex-col">
+                  <span className="text-[11px] text-cyan-800 font-medium flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-[#0284c7]" />
+                    Precio al Detal
+                  </span>
+                  <span className="text-base sm:text-lg font-bold text-cyan-950 mt-0.5">
+                    {formatCurrency(
+                      selectedPreviewProduct.priceDetal || selectedPreviewProduct.price,
+                      currencySymbol
+                    )}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-purple-50/80 border border-purple-100 flex flex-col">
+                  <span className="text-[11px] text-purple-800 font-medium flex items-center gap-1">
+                    <Box className="w-3 h-3 text-[#7c3aed]" />
+                    Precio Por Mayor
+                  </span>
+                  <span className="text-base sm:text-lg font-bold text-purple-950 mt-0.5">
+                    {formatCurrency(
+                      selectedPreviewProduct.priceMayor ||
+                        Math.round((selectedPreviewProduct.price || 0) * 0.85),
+                      currencySymbol
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-5 py-3 border-t border-purple-100 bg-purple-50/40 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const prod = selectedPreviewProduct;
+                  setSelectedPreviewProduct(null);
+                  onEditProduct(prod);
+                }}
+                className="py-2 px-3.5 bg-purple-100 hover:bg-purple-200/80 text-[#6d28d9] rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Editar Producto</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedPreviewProduct(null)}
+                className="py-2 px-4 bg-gradient-to-r from-[#6d28d9] to-[#0ea5e9] text-white rounded-xl text-xs font-medium hover:opacity-95 transition-opacity cursor-pointer shadow-xs"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/50 backdrop-blur-xs">
@@ -286,7 +433,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setProductToDelete(null)}
-                className="flex-1 py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-xl text-xs font-normal transition-colors"
+                className="flex-1 py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-xl text-xs font-normal transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
@@ -296,7 +443,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   onDeleteProduct(productToDelete.id);
                   setProductToDelete(null);
                 }}
-                className="flex-1 py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-medium transition-colors"
+                className="flex-1 py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-medium transition-colors cursor-pointer"
               >
                 Sí, Eliminar
               </button>
