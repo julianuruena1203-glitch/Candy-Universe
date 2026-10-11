@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    /* Aumentar el tamaño general de la fuente a 19px (1 punto adicional solicitado) */
+    font-size: 19px;
+  }
+
+  :root {
+    font-family: 'Arial Nova Light', 'Arial Nova', Arial, Helvetica, sans-serif;
+    font-weight: 300;
+  }
+
+  body {
+    font-family: 'Arial Nova Light', 'Arial Nova', Arial, Helvetica, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button, input, select, textarea {
+    font-family: inherit;
+  }
+}
+
+@layer utilities {
+  /* Reserved strictly for the main brand title 'CANDY UNIVERSE' */
+  .font-candy {
+    font-family: 'Fredoka', cursive, sans-serif;
+  }
+
+  .font-arial-nova {
+    font-family: 'Arial Nova Light', 'Arial Nova', Arial, Helvetica, sans-serif;
+    font-weight: 300;
+  }
+}
+
+@media print {
+  /* Hide non-printable UI elements */
+  body {
+    background: white !important;
+    color: black !important;
+    font-family: 'Arial Nova Light', 'Arial Nova', Arial, Helvetica, sans-serif !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only-container {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  .printable-ticket {
+    width: 78mm !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 6mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+}
+
+/* Subtle clean scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.4);
+}

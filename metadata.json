@@ -1,0 +1,6 @@
+{
+  "name": "Candy Universe - Punto de Venta & Tickets",
+  "description": "Punto de venta y emisión de tickets para Candy Universe, tu mundo de dulces y golosinas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
