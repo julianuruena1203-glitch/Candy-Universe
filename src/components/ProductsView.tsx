@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Product, ProductGroup, SaleType } from '../types';
+import { Product, ProductGroup } from '../types';
 import { formatCurrency } from '../utils/format';
 import { PRODUCT_GROUPS } from '../data/countries';
 import { CountryFlag } from './CountryFlag';
@@ -22,7 +22,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 }) => {
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<'Todos' | ProductGroup>('Todos');
-  const [selectedSaleType, setSelectedSaleType] = useState<'all' | SaleType>('all');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
@@ -39,11 +38,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     return products.filter((p) => {
       const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.group.toLowerCase().includes(q);
       const matchesGroup = selectedGroup === 'Todos' || p.group === selectedGroup;
-      const matchesSaleType = selectedSaleType === 'all' || p.saleType === selectedSaleType;
       const matchesCountry = !selectedCountryCode || p.countryFlag === selectedCountryCode;
-      return matchesSearch && matchesGroup && matchesSaleType && matchesCountry;
+      return matchesSearch && matchesGroup && matchesCountry;
     });
-  }, [products, search, selectedGroup, selectedSaleType, selectedCountryCode]);
+  }, [products, search, selectedGroup, selectedCountryCode]);
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 py-5 space-y-4">
@@ -55,6 +53,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           </h2>
           <div className="flex items-center gap-2 text-xs text-purple-600/80 mt-0.5 font-light">
             <span>{products.length} productos registrados</span>
+            <span>·</span>
+            <span>Precios al Detal y Por Mayor configurados</span>
           </div>
         </div>
 
@@ -78,45 +78,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-9 pr-4 bg-purple-50/40 border border-purple-100 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
           />
-        </div>
-
-        {/* Modalidad Filter: Todos | Al Detal | Al Por Mayor */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] text-purple-600/80 font-light shrink-0">Modalidad:</span>
-          <div className="flex items-center gap-1 p-0.5 bg-purple-50 rounded-xl border border-purple-100">
-            <button
-              onClick={() => setSelectedSaleType('all')}
-              className={`px-2.5 py-1 text-xs rounded-lg transition-all ${
-                selectedSaleType === 'all'
-                  ? 'bg-white text-purple-950 font-medium shadow-xs'
-                  : 'text-purple-800/70 hover:text-purple-950'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setSelectedSaleType('detal')}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg transition-all ${
-                selectedSaleType === 'detal'
-                  ? 'bg-white text-purple-950 font-medium shadow-xs'
-                  : 'text-purple-800/70 hover:text-purple-950'
-              }`}
-            >
-              <Tag className="w-3 h-3 text-[#0ea5e9]" />
-              <span>Detal</span>
-            </button>
-            <button
-              onClick={() => setSelectedSaleType('mayor')}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg transition-all ${
-                selectedSaleType === 'mayor'
-                  ? 'bg-white text-purple-950 font-medium shadow-xs'
-                  : 'text-purple-800/70 hover:text-purple-950'
-              }`}
-            >
-              <Box className="w-3 h-3 text-[#7c3aed]" />
-              <span>Por Mayor</span>
-            </button>
-          </div>
         </div>
 
         {/* Groups in Alphabetical Order */}
@@ -146,11 +107,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           ))}
         </div>
 
-        {/* Country Flags Filter Bar (Always SVG Flags, no initials) */}
+        {/* Country Flag Filter */}
         {availableCountryCodes.length > 1 && (
-          <div className="flex items-center gap-1.5 pt-1 border-t border-purple-50 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 pt-2 border-t border-purple-50 overflow-x-auto no-scrollbar">
             <span className="text-[11px] text-purple-600/70 font-light mr-1 shrink-0">
-              País:
+              Filtrar por País:
             </span>
             <button
               onClick={() => setSelectedCountryCode(null)}
@@ -182,7 +143,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         )}
       </div>
 
-      {/* Products Table with Cost and Sale Price in COP */}
+      {/* Products Table with Detal, Por Mayor and Cost Price */}
       <div className="bg-white rounded-3xl border border-purple-100 shadow-xs overflow-hidden">
         {filteredProducts.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center">
@@ -191,7 +152,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               No hay productos en esta sección
             </p>
             <p className="text-xs text-slate-500 mt-1 font-light">
-              Agrega tus productos con precio de compra y venta para despachar en caja.
+              Agrega tus productos con precio al detal y por mayor para despachar en caja.
             </p>
             <button
               onClick={onOpenNewProductModal}
@@ -208,19 +169,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <th className="py-3 px-4">Producto</th>
                   <th className="py-3 px-4">País</th>
                   <th className="py-3 px-4">Grupo</th>
-                  <th className="py-3 px-4">Tipo</th>
-                  <th className="py-3 px-4 text-right">Precio Compra</th>
-                  <th className="py-3 px-4 text-right">Precio Venta</th>
-                  <th className="py-3 px-4 text-right">Ganancia</th>
+                  <th className="py-3 px-4 text-right">Precio Detal</th>
+                  <th className="py-3 px-4 text-right">Precio Por Mayor</th>
+                  <th className="py-3 px-4 text-right">Costo Compra</th>
                   <th className="py-3 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-50 text-slate-800">
                 {filteredProducts.map((p) => {
+                  const pDetal = p.priceDetal || p.price;
+                  const pMayor = p.priceMayor || Math.round(pDetal * 0.85);
                   const cost = p.costPrice || 0;
-                  const profit = p.price - cost;
-                  const marginPct = cost > 0 ? Math.round((profit / p.price) * 100) : 100;
-                  const isWholesale = p.saleType === 'mayor';
 
                   return (
                     <tr key={p.id} className="hover:bg-purple-50/30 transition-colors">
@@ -243,7 +202,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {/* Real SVG flag icon, no initials */}
                         <div className="inline-flex p-1 rounded-md bg-purple-50/60 border border-purple-100/60">
                           <CountryFlag countryCode={p.countryFlag || 'CO'} size="sm" />
                         </div>
@@ -253,30 +211,33 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                           {p.group}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${
-                            isWholesale
-                              ? 'bg-purple-100 text-purple-900'
-                              : 'bg-cyan-100 text-cyan-900'
-                          }`}
-                        >
-                          {isWholesale ? 'Por Mayor' : 'Detal'}
-                        </span>
+                      {/* Precio Detal */}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-100 text-cyan-800">
+                            Detal
+                          </span>
+                          <span className="font-semibold text-cyan-900 text-sm">
+                            {formatCurrency(pDetal, currencySymbol)}
+                          </span>
+                        </div>
                       </td>
+                      {/* Precio Por Mayor */}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">
+                            Mayor
+                          </span>
+                          <span className="font-semibold text-purple-900 text-sm">
+                            {formatCurrency(pMayor, currencySymbol)}
+                          </span>
+                        </div>
+                      </td>
+                      {/* Costo */}
                       <td className="py-3 px-4 text-right text-slate-500 font-light whitespace-nowrap">
-                        {p.costPrice ? formatCurrency(p.costPrice, currencySymbol) : '—'}
+                        {cost > 0 ? formatCurrency(cost, currencySymbol) : '—'}
                       </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <span className="font-semibold text-[#581c87] text-sm">
-                          {formatCurrency(p.price, currencySymbol)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <span className="text-xs font-medium text-emerald-700">
-                          +{formatCurrency(profit, currencySymbol)} ({marginPct}%)
-                        </span>
-                      </td>
+                      {/* Acciones */}
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -306,60 +267,26 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         )}
       </div>
 
-      {/* Confirmation Modal to safely delete product */}
+      {/* Delete Confirmation Modal */}
       {productToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-purple-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-sm sm:text-base">
-                    ¿Eliminar producto?
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Se quitará del catálogo de productos.
-                  </p>
-                </div>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-purple-950/50 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-5 border border-purple-100 shadow-xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-semibold text-slate-900 text-base">
+                ¿Eliminar {productToDelete.name}?
+              </h3>
+              <p className="text-xs text-slate-500 font-light">
+                Esta acción retirará el producto del catálogo y no se podrá deshacer.
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setProductToDelete(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-3 bg-purple-50/60 rounded-2xl border border-purple-100/80 flex items-center gap-3">
-              {productToDelete.imageUrl ? (
-                <img
-                  src={productToDelete.imageUrl}
-                  alt={productToDelete.name}
-                  className="w-12 h-12 rounded-xl object-cover border border-purple-100 shrink-0"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-xl bg-purple-100/80 flex items-center justify-center text-purple-400 shrink-0">
-                  <Package className="w-6 h-6 stroke-1" />
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-900 truncate">
-                  {productToDelete.name}
-                </p>
-                <p className="text-xs text-purple-700/80">
-                  {productToDelete.group} · {formatCurrency(productToDelete.price, currencySymbol)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setProductToDelete(null)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/80 rounded-xl transition-colors cursor-pointer"
+                className="flex-1 py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-xl text-xs font-normal transition-colors"
               >
                 Cancelar
               </button>
@@ -369,9 +296,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   onDeleteProduct(productToDelete.id);
                   setProductToDelete(null);
                 }}
-                className="px-4 py-2 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-sm shadow-rose-600/30 flex items-center gap-1.5 cursor-pointer"
+                className="flex-1 py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-medium transition-colors"
               >
-                <Trash2 className="w-3.5 h-3.5" />
                 Sí, Eliminar
               </button>
             </div>

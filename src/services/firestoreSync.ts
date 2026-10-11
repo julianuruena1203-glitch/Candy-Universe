@@ -52,10 +52,14 @@ export function subscribeToProducts(
       const list: Product[] = [];
       snapshot.forEach((d) => {
         const data = d.data() as any;
+        const pDetal = Number(data.priceDetal) || Number(data.price) || 0;
+        const pMayor = Number(data.priceMayor) || Math.round(pDetal * 0.85);
         list.push({
           id: d.id,
           name: data.name || '',
-          price: Number(data.price) || 0,
+          price: pDetal,
+          priceDetal: pDetal,
+          priceMayor: pMayor,
           costPrice: data.costPrice !== undefined ? Number(data.costPrice) : undefined,
           countryFlag: data.countryFlag || 'CO',
           group: data.group || 'Gomas',
@@ -83,14 +87,18 @@ export function subscribeToProducts(
 export async function saveProductToFirestore(product: Product): Promise<void> {
   const path = `products/${product.id}`;
   try {
+    const pDetal = Number(product.priceDetal) || Number(product.price) || 0;
+    const pMayor = Number(product.priceMayor) || Math.round(pDetal * 0.85);
     const clean = sanitizeData({
       id: product.id,
       name: product.name,
-      price: Number(product.price) || 0,
+      price: pDetal,
+      priceDetal: pDetal,
+      priceMayor: pMayor,
       costPrice: product.costPrice !== undefined ? Number(product.costPrice) : undefined,
       countryFlag: product.countryFlag || 'CO',
       group: product.group,
-      saleType: product.saleType,
+      saleType: product.saleType || 'detal',
       imageUrl: product.imageUrl || undefined,
     });
     await setDoc(doc(db, 'products', product.id), clean);

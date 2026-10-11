@@ -134,35 +134,66 @@ export default function App() {
   }, [currentUserRole]);
 
   // Cart operations
-  const handleAddToCart = useCallback((product: Product) => {
+  const handleAddToCart = useCallback((product: Product, priceType: 'detal' | 'mayor' = 'detal') => {
+    const unitPrice = priceType === 'mayor'
+      ? (product.priceMayor || product.price)
+      : (product.priceDetal || product.price);
+
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.product.id === product.id);
+      const existing = prevCart.find(
+        (item) => item.product.id === product.id && (item.priceType || 'detal') === priceType
+      );
       if (existing) {
         return prevCart.map((item) =>
-          item.product.id === product.id
+          item.product.id === product.id && (item.priceType || 'detal') === priceType
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prevCart, { product, quantity: 1 }];
+      return [...prevCart, { product, quantity: 1, priceType, unitPrice }];
     });
   }, []);
 
-  const handleUpdateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCart((prev) => prev.filter((item) => item.product.id !== productId));
-      return;
-    }
-    setCart((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
-  }, []);
+  const handleUpdateQuantity = useCallback(
+    (productId: string, quantity: number, priceType?: 'detal' | 'mayor') => {
+      if (quantity <= 0) {
+        setCart((prev) =>
+          prev.filter(
+            (item) =>
+              !(
+                item.product.id === productId &&
+                (!priceType || (item.priceType || 'detal') === priceType)
+              )
+          )
+        );
+        return;
+      }
+      setCart((prev) =>
+        prev.map((item) =>
+          item.product.id === productId &&
+          (!priceType || (item.priceType || 'detal') === priceType)
+            ? { ...item, quantity }
+            : item
+        )
+      );
+    },
+    []
+  );
 
-  const handleRemoveFromCart = useCallback((productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
-  }, []);
+  const handleRemoveFromCart = useCallback(
+    (productId: string, priceType?: 'detal' | 'mayor') => {
+      setCart((prev) =>
+        prev.filter(
+          (item) =>
+            !(
+              item.product.id === productId &&
+              (!priceType || (item.priceType || 'detal') === priceType)
+            )
+        )
+      );
+    },
+    []
+  );
 
   const handleClearCart = useCallback(() => {
     setCart([]);
@@ -189,17 +220,21 @@ export default function App() {
         ticketId = formatTicketCode(saleNumber);
       }
 
-      const items = cart.map((item) => ({
-        productId: item.product.id,
-        name: item.product.name,
-        group: item.product.group,
-        countryFlag: item.product.countryFlag,
-        saleType: item.product.saleType,
-        unitPrice: item.product.price,
-        unitCost: item.product.costPrice,
-        quantity: item.quantity,
-        subtotal: item.product.price * item.quantity,
-      }));
+      const items = cart.map((item) => {
+        const pType = item.priceType || 'detal';
+        const unitPrice = item.unitPrice ?? (pType === 'mayor' ? (item.product.priceMayor || item.product.price) : (item.product.priceDetal || item.product.price));
+        return {
+          productId: item.product.id,
+          name: item.product.name,
+          group: item.product.group,
+          countryFlag: item.product.countryFlag,
+          saleType: pType,
+          unitPrice,
+          unitCost: item.product.costPrice,
+          quantity: item.quantity,
+          subtotal: unitPrice * item.quantity,
+        };
+      });
 
       const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 

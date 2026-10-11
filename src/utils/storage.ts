@@ -15,16 +15,22 @@ export function getStoredProducts(): Product[] {
       return DEFAULT_PRODUCTS;
     }
     const list = JSON.parse(raw);
-    return list.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      price: Number(p.price) || 0,
-      costPrice: Number(p.costPrice) || Math.round((Number(p.price) || 0) * 0.7),
-      countryFlag: p.countryFlag || 'CO',
-      group: p.group || p.category || 'Gomas',
-      saleType: p.saleType || 'detal',
-      imageUrl: p.imageUrl || undefined,
-    }));
+    return list.map((p: any) => {
+      const pDetal = Number(p.priceDetal) || Number(p.price) || 0;
+      const pMayor = Number(p.priceMayor) || Math.round(pDetal * 0.85);
+      return {
+        id: p.id,
+        name: p.name,
+        price: pDetal,
+        priceDetal: pDetal,
+        priceMayor: pMayor,
+        costPrice: p.costPrice !== undefined ? Number(p.costPrice) : Math.round(pDetal * 0.7),
+        countryFlag: p.countryFlag || 'CO',
+        group: p.group || p.category || 'Gomas',
+        saleType: p.saleType || 'detal',
+        imageUrl: p.imageUrl || undefined,
+      };
+    });
   } catch {
     return DEFAULT_PRODUCTS;
   }

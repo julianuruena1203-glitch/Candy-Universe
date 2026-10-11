@@ -21,17 +21,21 @@ export type UserRole = 'admin' | 'seller';
 export interface Product {
   id: string;
   name: string;
-  price: number; // Precio de venta en COP
+  price: number; // Precio base / detal en COP
+  priceDetal: number; // Precio de venta al Detal en COP
+  priceMayor: number; // Precio de venta al Por Mayor en COP
   costPrice?: number; // Precio de compra en COP
   countryFlag: string; // Código o bandera del país (e.g. CO, MX, US)
   group: ProductGroup; // En orden alfabético
-  saleType: SaleType; // 'detal' (Al Detal) o 'mayor' (Al Por Mayor)
+  saleType?: SaleType; // Opcional para retrocompatibilidad
   imageUrl?: string; // Imagen adjuntada
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  priceType?: 'detal' | 'mayor';
+  unitPrice?: number;
 }
 
 export type PaymentMethod = 

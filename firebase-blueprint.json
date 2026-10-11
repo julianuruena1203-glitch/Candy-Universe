@@ -18,7 +18,15 @@
         },
         "price": {
           "type": "number",
-          "description": "Precio de venta al público en COP"
+          "description": "Precio de venta base en COP"
+        },
+        "priceDetal": {
+          "type": "number",
+          "description": "Precio de venta al detal en COP"
+        },
+        "priceMayor": {
+          "type": "number",
+          "description": "Precio de venta al por mayor en COP"
         },
         "costPrice": {
           "type": "number",
@@ -45,7 +53,7 @@
         },
         "saleType": {
           "type": "string",
-          "description": "Modalidad de venta (detal o mayor)",
+          "description": "Modalidad de venta (opcional para retrocompatibilidad)",
           "enum": ["detal", "mayor"]
         },
         "imageUrl": {
@@ -59,7 +67,7 @@
           "description": "Fecha y hora de última modificación"
         }
       },
-      "required": ["id", "name", "price", "group", "saleType"]
+      "required": ["id", "name", "price", "group"]
     },
     "Sale": {
       "title": "Sale",
