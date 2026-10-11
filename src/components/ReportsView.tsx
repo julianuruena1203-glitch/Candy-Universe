@@ -121,6 +121,26 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     }, 0);
   }, [filteredSales, selectedCategory]);
 
+  // Ganancia Bruta Estimada (Total Vendido - Costo de Mercancía)
+  const totalProfit = useMemo(() => {
+    return filteredSales.reduce((acc, s) => {
+      const items = selectedCategory === 'todas'
+        ? s.items
+        : s.items.filter((it) => it.group === selectedCategory);
+      const itemsProfit = items.reduce((sum, it) => {
+        const cost = it.unitCost !== undefined ? it.unitCost : Math.round(it.unitPrice * 0.7);
+        const profit = it.unitPrice - cost;
+        return sum + (profit * it.quantity);
+      }, 0);
+      return acc + itemsProfit;
+    }, 0);
+  }, [filteredSales, selectedCategory]);
+
+  const profitMargin = useMemo(() => {
+    if (totalRevenue <= 0) return 0;
+    return Math.round((totalProfit / totalRevenue) * 100);
+  }, [totalRevenue, totalProfit]);
+
   // Payment method breakdown
   const paymentMethodStats = useMemo(() => {
     const stats: Record<PaymentMethod, { total: number; count: number; name: string }> = {
@@ -413,8 +433,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
       </div>
 
-      {/* KPI Cards Grid (NOTE: "Ticket Promedio" was eliminated per user request) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Revenue in COP */}
         <div className="bg-white p-4.5 rounded-3xl border border-purple-100 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -430,6 +450,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
           <div className="mt-2 text-[11px] text-purple-600 font-light">
             {selectedCategory === 'todas' ? 'Venta total filtrada' : `Ventas en ${selectedCategory}`}
+          </div>
+        </div>
+
+        {/* Ganancia Bruta Estimada */}
+        <div className="bg-white p-4.5 rounded-3xl border border-emerald-100 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-emerald-900/80">Ganancia Estimada</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">
+              {profitMargin}% margen
+            </span>
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl sm:text-3xl font-semibold text-emerald-600 tracking-tight">
+              {formatCurrency(totalProfit, config.currencySymbol)}
+            </span>
+          </div>
+          <div className="mt-2 text-[11px] text-emerald-600/90 font-light">
+            Ventas menos costo de productos
           </div>
         </div>
 
