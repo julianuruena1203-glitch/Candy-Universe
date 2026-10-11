@@ -76,8 +76,19 @@ export async function loginWithGoogle() {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
+  } catch (error: any) {
+    // If the user dismissed or closed the popup window, handle gracefully
+    if (
+      error?.code === 'auth/popup-closed-by-user' ||
+      error?.code === 'auth/cancelled-popup-request'
+    ) {
+      return null;
+    }
+    if (error?.code === 'auth/popup-blocked') {
+      throw new Error(
+        'La ventana de inicio de sesión fue bloqueada. Habilita las ventanas emergentes en tu navegador para continuar.'
+      );
+    }
     throw error;
   }
 }

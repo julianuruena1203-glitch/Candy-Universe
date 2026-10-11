@@ -36,8 +36,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     try {
       setIsConnecting(true);
       await loginWithGoogle();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Handled gracefully
     } finally {
       setIsConnecting(false);
     }

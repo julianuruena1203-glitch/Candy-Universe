@@ -34,10 +34,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSelectRole, firebaseUser
     try {
       setIsSigningIn(true);
       setError('');
-      await loginWithGoogle();
+      const user = await loginWithGoogle();
+      if (!user) {
+        // User closed or cancelled the popup intentionally
+        return;
+      }
     } catch (err: any) {
-      console.error(err);
-      setError('No se pudo conectar con Google. Por favor, verifica la ventana emergente.');
+      setError(err?.message || 'No se pudo conectar con Google. Por favor, intenta de nuevo.');
     } finally {
       setIsSigningIn(false);
     }

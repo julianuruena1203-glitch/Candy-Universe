@@ -428,7 +428,13 @@ export default function App() {
             </span>
             <button
               type="button"
-              onClick={() => loginWithGoogle()}
+              onClick={async () => {
+                try {
+                  await loginWithGoogle();
+                } catch {
+                  // Handled gracefully
+                }
+              }}
               className="ml-2 px-2.5 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium text-[11px] transition-colors shrink-0"
             >
               Conectar Google
