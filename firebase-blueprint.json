@@ -59,7 +59,7 @@
         "imageUrl": {
           "type": "string",
           "description": "URL de la imagen del producto",
-          "maxLength": 2048
+          "maxLength": 200000
         },
         "updatedAt": {
           "type": "string",

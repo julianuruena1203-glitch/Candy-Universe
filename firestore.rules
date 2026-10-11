@@ -40,7 +40,7 @@ service cloud.firestore {
              (!('saleType' in data) || data.saleType is string) &&
              (!('costPrice' in data) || data.costPrice is number) &&
              (!('countryFlag' in data) || (data.countryFlag is string && data.countryFlag.size() <= 32)) &&
-             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2048));
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 200000));
     }
 
     match /products/{productId} {

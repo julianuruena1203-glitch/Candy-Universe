@@ -52,21 +52,64 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 640;
+          let { width, height } = img;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/webp', 0.82);
+          resolve(dataUrl);
+        };
+        img.onerror = () => {
+          resolve(event.target?.result as string);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError('La imagen debe pesar menos de 2MB');
+    if (file.size > 4 * 1024 * 1024) {
+      setError('La imagen debe pesar menos de 4MB');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setImageUrl(event.target?.result as string);
+    try {
+      const optimizedUrl = await compressImage(file);
+      setImageUrl(optimizedUrl);
       setError('');
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setError('No se pudo procesar la imagen seleccionada');
+    }
   };
 
   const handleRemoveImage = () => {
@@ -307,7 +350,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <span>{imageUrl ? 'Cambiar Imagen' : 'Adjuntar Imagen'}</span>
                 </label>
                 <p className="text-[11px] text-slate-400 font-light mt-1">
-                  PNG, JPG o WebP (Máx. 2MB)
+                  PNG, JPG o WebP (Máx. 4MB)
                 </p>
               </div>
             </div>
