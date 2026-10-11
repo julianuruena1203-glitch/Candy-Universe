@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6d28d9" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <linearGradient id="stickGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e2e8f0" />
+      <stop offset="50%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#3b0764" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- Inner Container Glow -->
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="#5b15b5" opacity="0.9" />
+
+  <!-- Stick of Lollipop -->
+  <path d="M236 300 L140 430 C132 440 142 452 154 444 L260 330 Z" fill="url(#stickGrad)" />
+
+  <!-- Main Candy Circle with shadow -->
+  <g filter="url(#shadow)">
+    <circle cx="280" cy="220" r="160" fill="#38bdf8" />
+    <!-- Pink Half / Swirl -->
+    <path d="M280 60 C368.37 60 440 131.63 440 220 C440 308.37 368.37 380 280 380 C191.63 380 120 308.37 120 220 C120 131.63 191.63 60 280 60 Z" fill="#ec4899" />
+    
+    <!-- Spiral Candy Rays -->
+    <path d="M280 220 L235 66 C257 63 280 62 280 62 Z" fill="#facc15" />
+    <path d="M280 220 L385 92 C362 77 340 68 280 220 Z" fill="#ef4444" />
+    <path d="M280 220 L434 175 C438 197 438 220 280 220 Z" fill="#38bdf8" />
+    <path d="M280 220 L416 325 C431 306 438 281 280 220 Z" fill="#ffffff" />
+    <path d="M280 220 L235 374 C257 377 280 378 280 220 Z" fill="#facc15" />
+    <path d="M280 220 L152 325 L280 220 Z" fill="#ef4444" />
+    <path d="M280 220 L126 175 C123 197 123 220 280 220 Z" fill="#38bdf8" />
+    <path d="M280 220 L152 115 C137 134 130 159 280 220 Z" fill="#ffffff" />
+
+    <!-- Center lollipop core -->
+    <circle cx="280" cy="220" r="54" fill="#ffffff" />
+    <circle cx="280" cy="220" r="35" fill="#f43f5e" />
+    <circle cx="280" cy="220" r="16" fill="#facc15" />
+  </g>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg_maskable" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95" />
+      <stop offset="50%" stop-color="#6d28d9" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+    <filter id="shadow_maskable" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  <!-- Full bleed background for maskable safe-zone -->
+  <rect width="512" height="512" fill="url(#bg_maskable)" />
+  <!-- Swirl Lollipop Graphic scaled inside 70% safe area -->
+  <g transform="translate(256, 256) scale(7.2)" filter="url(#shadow_maskable)">
+    <circle cx="0" cy="0" r="21" fill="#38bdf8" />
+    <path d="M0 -21 C11.598 -21 21 -11.598 21 0 C21 11.598 11.598 21 0 21 C-11.598 21 -21 11.598 -21 0 C-21 -11.598 -11.598 -21 0 -21 Z" fill="#ec4899" />
+    <path d="M0 0 L-6 -20.5 C-3 -20.9 0 -21 0 -21 L0 0 Z" fill="#facc15" />
+    <path d="M0 0 L14 -17 C11.5 -19 8 -20.5 0 0 Z" fill="#ef4444" />
+    <path d="M0 0 L20.5 -6 C21 -3 21 0 0 0 Z" fill="#38bdf8" />
+    <path d="M0 0 L18 14 C20 11.5 21 8 0 0 Z" fill="#ffffff" />
+    <path d="M0 0 L-6 20.5 C-3 21 0 21 0 0 Z" fill="#facc15" />
+    <path d="M0 0 L-17 14 C-15 17 -12 19 0 0 Z" fill="#ef4444" />
+    <path d="M0 0 L-20.5 -6 C-20.9 -3 -21 0 0 0 Z" fill="#38bdf8" />
+    <path d="M0 0 L-17 -14 C-19 -11.5 -20.5 -8 0 0 Z" fill="#ffffff" />
+    <circle cx="0" cy="0" r="7" fill="#ffffff" />
+    <circle cx="0" cy="0" r="4.5" fill="#f43f5e" />
+    <circle cx="0" cy="0" r="2" fill="#facc15" />
+  </g>
+</svg>

@@ -3,6 +3,7 @@ import { UserRole } from '../types';
 import { ShoppingBag, ShieldCheck, Lock, ArrowRight, Eye, EyeOff, Cloud, CheckCircle2, LogOut } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { loginWithGoogle, logoutUser } from '../firebase';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface LoginViewProps {
   onSelectRole: (role: UserRole) => void;
@@ -302,8 +303,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSelectRole, firebaseUser
           </div>
         </div>
 
+        {/* Desktop PWA Install Button */}
+        <div className="w-full mt-4">
+          <PWAInstallButton variant="compact" />
+        </div>
+
         {/* Footer Note */}
-        <p className="text-[11px] text-purple-600/70 font-light text-center mt-6">
+        <p className="text-[11px] text-purple-600/70 font-light text-center mt-5">
           Candy Universe · Base de datos en tiempo real (Firebase)
         </p>
       </div>

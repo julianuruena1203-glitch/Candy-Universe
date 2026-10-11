@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Package, BarChart3, Calculator, Settings, LogOut, ShieldCheck, User as UserIcon, Cloud, CheckCircle2 } from 'lucide-react';
 import { CandyLogo } from './CandyLogo';
+import { PWAInstallButton } from './PWAInstallButton';
 import { UserRole } from '../types';
 import { User } from 'firebase/auth';
 import { loginWithGoogle, logoutUser } from '../firebase';
@@ -120,6 +121,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* User Role Badge, Cloud Status & Actions */}
         <div className="flex items-center gap-2">
+          {/* PWA Desktop Install Button */}
+          <PWAInstallButton variant="navbar" />
+
           {/* Cloud Sync Status Pill */}
           {firebaseUser ? (
             <div

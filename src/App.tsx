@@ -28,6 +28,8 @@ import { TicketModal } from './components/TicketModal';
 import { ProductModal } from './components/ProductModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginView } from './components/LoginView';
+import { PWAUpdateBanner } from './components/PWAUpdateBanner';
+import { usePWAUpdate } from './hooks/usePWAUpdate';
 import { auth, testConnection, loginWithGoogle } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import {
@@ -48,6 +50,16 @@ import {
 import { Cloud, Wifi, AlertCircle } from 'lucide-react';
 
 export default function App() {
+  // PWA Service Worker & Auto-Update
+  const {
+    needRefresh,
+    updateApp,
+    checkForUpdate,
+    isCheckingUpdate,
+    updateSuccessNotice,
+    dismissUpdate,
+  } = usePWAUpdate();
+
   // Firebase Auth State
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
@@ -441,10 +453,17 @@ export default function App() {
   // If no user role is selected, show initial login screen
   if (!currentUserRole) {
     return (
-      <LoginView
-        firebaseUser={firebaseUser}
-        onSelectRole={(role) => setCurrentUserRole(role)}
-      />
+      <>
+        <LoginView
+          firebaseUser={firebaseUser}
+          onSelectRole={(role) => setCurrentUserRole(role)}
+        />
+        <PWAUpdateBanner
+          needRefresh={needRefresh}
+          onUpdate={updateApp}
+          onDismiss={dismissUpdate}
+        />
+      </>
     );
   }
 
@@ -585,8 +604,19 @@ export default function App() {
           onSaveConfig={handleSaveConfig}
           onResetProducts={handleResetProducts}
           onClearSales={handleClearSales}
+          onCheckForUpdate={checkForUpdate}
+          isCheckingUpdate={isCheckingUpdate}
+          updateSuccessNotice={updateSuccessNotice}
+          onUpdateApp={updateApp}
         />
       )}
+
+      {/* PWA Update Banner for active session */}
+      <PWAUpdateBanner
+        needRefresh={needRefresh}
+        onUpdate={updateApp}
+        onDismiss={dismissUpdate}
+      />
     </div>
   );
 }

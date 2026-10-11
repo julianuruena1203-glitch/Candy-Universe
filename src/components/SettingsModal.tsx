@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BusinessConfig } from '../types';
-import { X, Download } from 'lucide-react';
+import { X, Download, RefreshCw, CheckCircle2, Monitor } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,6 +10,10 @@ interface SettingsModalProps {
   onSaveConfig: (config: BusinessConfig) => void;
   onResetProducts: () => void;
   onClearSales: () => void;
+  onCheckForUpdate?: () => Promise<boolean>;
+  isCheckingUpdate?: boolean;
+  updateSuccessNotice?: boolean;
+  onUpdateApp?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -18,6 +23,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSaveConfig,
   onResetProducts,
   onClearSales,
+  onCheckForUpdate,
+  isCheckingUpdate = false,
+  updateSuccessNotice = false,
+  onUpdateApp,
 }) => {
   const [storeName, setStoreName] = useState(config.storeName);
   const [storeSubtitle, setStoreSubtitle] = useState(config.storeSubtitle);
@@ -155,6 +164,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               placeholder="¡Gracias por endulzar tu día en Candy Universe!"
               className="w-full h-10 px-3.5 bg-purple-50/40 border border-purple-100 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
             />
+          </div>
+
+          {/* Desktop App & Auto-Updates Section */}
+          <div className="pt-3 border-t border-purple-100 space-y-2.5">
+            <span className="block text-xs font-medium text-purple-900">
+              Aplicación de Escritorio & Actualizaciones
+            </span>
+
+            {/* PWA Install helper */}
+            <PWAInstallButton variant="settings" />
+
+            {/* Manual Update check & force reload */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-slate-700">
+                  Estado de versión web
+                </span>
+                {updateSuccessNotice && (
+                  <span className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Versión al día
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onCheckForUpdate) {
+                      onCheckForUpdate();
+                    }
+                  }}
+                  disabled={isCheckingUpdate}
+                  className="py-2 px-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3 h-3 text-[#0ea5e9] ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                  <span>{isCheckingUpdate ? 'Comprobando...' : 'Buscar Actualización'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateApp) {
+                      onUpdateApp();
+                    } else {
+                      window.location.reload();
+                    }
+                  }}
+                  className="py-2 px-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3 text-[#6d28d9]" />
+                  <span>Recargar App</span>
+                </button>
+              </div>
+
+              <p className="text-[10px] text-slate-500 font-light">
+                Cuando modifiques la página web, la aplicación instalada descargará los cambios automáticamente.
+              </p>
+            </div>
           </div>
 
           {/* Quick Data Actions */}
